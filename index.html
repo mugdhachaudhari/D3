@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <title>Cara Data Visualization</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="bower_components/jQuery/dist/jquery.js"></script>
+</head>
+
+<body>
+<h4 id="hovered">chevrolet chevelle malibu</h4>
+
+
+<script src="bower_components/d3/d3.min.js"></script>
+
+<script>
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+            width = 960 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+    var x = d3.scale.linear()
+            .range([0, width]);
+    var y = d3.scale.linear()
+            .range([height, 0]);
+    var color = d3.scale.category10();
+    var axisNames = {
+        mpg: 'mpg',
+        displacement: 'displacement',
+        cylinder: 'cylinder',
+        horsepower: 'horsepower',
+        weight: 'weight',
+        acceleration : 'acceleration'
+    };
+    var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+    var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+    var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.csv("car.csv", function(error, data) {
+        data.forEach(function(d) {
+            d.mpg = +d.mpg;
+            d.displacement = +d.displacement;
+            d.cylinders = +d.cylinders;
+            d.horsepower = +d.horsepower;
+            d.weight = +d.weight;
+            d.acceleration = +d.acceleration;
+        });
+        x.domain(d3.extent(data, function(d) { return d.displacement; })).nice();
+        y.domain(d3.extent(data, function(d) { return d.mpg; })).nice();
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width)
+                .attr("y", -6)
+                .style("text-anchor", "end")
+                .text("Displacement");
+        svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("mpg")
+
+        var circles = svg.selectAll("circle")
+                .data(data)
+                .enter().append("circle")
+                //.attr("class", "dot")
+                .attr("r", 3.5)
+                .attr("cx", function(d) { return x(d.displacement); })
+                .attr("cy", function(d) { return y(d.mpg); })
+                .on("mouseover",function (d) {
+                    d3.select('#hovered').text(d.name);
+                });
+        d3.select("[name=xAX]").on("change", function(){
+            xAxy = this.value;
+            x.domain(d3.extent(data, function(d) { return d[xAxy]; })).nice();
+            svg.select(".x.axis").transition().call(xAxis);
+            svg.selectAll("circle").transition().attr("cx", function(d) {
+                return x(d[xAxy]);
+            });
+            svg.selectAll(".x.axis").selectAll("text.label").text(axisNames[xAxy]);
+        });
+        d3.select("[name=yAX]").on("change", function(){
+            yAxy = this.value;
+            y.domain(d3.extent(data, function(d) { return d[yAxy]; })).nice();
+            svg.select(".y.axis").transition().call(yAxis);
+            svg.selectAll("circle").transition().attr("cy", function(d) {
+                return y(d[yAxy]);
+            });
+            svg.selectAll(".y.axis").selectAll("text.label").text(axisNames[yAxy]);
+        });
+        var globaldata = data;
+
+        d3.select('#update').on('click', function() {
+
+            var min = document.getElementById('mpg-min');
+            var max = document.getElementById('mpg-max');
+
+            var circles = svg.selectAll("circle").data(globaldata.filter(function(d) {
+                return (d.mpg <=max.value && d.mpg >= min.value);
+            }));
+
+            var xa = document.getElementById('xAXs');
+            var ya = document.getElementById('yAXs');
+            circles.enter()
+                    .append("circle");
+
+            circles
+                    .attr("r", 3.5)
+                    .attr("cx", function(d) { return x(d[xa.value]); })
+                    .attr("cy", function(d) { return y(d[ya.value]); })
+                    .on("mouseover",function (d) {
+                        d3.select('#hovered').text(d.name);});
+
+            circles.exit().remove();
+
+
+
+        });
+
+
+    });
+</script>
+
+<br><br>
+<center>
+    <table>
+        <tr>
+            <td><div id="label"><b>x-Axis:</b></div></td>
+            <td>
+                <select name="xAX" id="xAXs">
+                    <option value ="mpg">mpg</option>
+                    <option value ="displacement"  selected="true">Displacement</option>
+                    <option value ="cylinders">cylinders</option>
+                    <option value ="horsepower">Horsepower</option>
+                    <option value ="weight">Weight</option>
+                    <option value ="acceleration">Acceleration</option>
+                </select>
+            </td>
+            <td><div id="label2"><b>y-Axis:</b></div></td>
+            <td><select name="yAX" id="yAXs">
+                <option value ="mpg"  selected="true">mpg</option>
+                <option value ="displacement">Displacement</option>
+                <option value ="cylinders">cylinders</option>
+                <option value ="horsepower">Horsepower</option>
+                <option value ="weight">Weight</option>
+                <option value ="acceleration">Acceleration</option>
+            </select>
+            </td>
+        </tr>
+    </table>
+    <br>
+    <div>
+        <table>
+            <tr>
+                <td> <input id="mpg-min" type="text" value = 0 size="10"></td>
+                <td><input id="mpg-max" type="text" value = 30 size="10"></td>
+                <td><button id="update">Query MPG</button></td>
+            </tr>
+        </table>
+    </div>
+</center>
+
+
+
+
+
+</body>
